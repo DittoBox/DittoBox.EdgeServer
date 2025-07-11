@@ -3,16 +3,31 @@ using DittoBox.EdgeServer.ContainerManagement.Domain.Models.Entities;
 using DittoBox.EdgeServer.ContainerManagement.Domain.Services;
 using DittoBox.EdgeServer.ContainerManagement.Infrastructure.Configuration;
 using DittoBox.EdgeServer.ContainerManagement.Infrastructure.Repositories;
+using Microsoft.Extensions.Configuration;
 
 namespace DittoBox.EdgeServer.ContainerManagement.Application.Services
 {
-	public class ContainerService(
-        IContainerRepository containerRepository,
-        IContainerHealthRecordRepository containerHealthRecordRepository,
-		IContainerStatusRecordRepository containerStatusRecordRepository,
-        ILogger<ContainerService> logger
-    ) : BaseService, IContainerService
+	public class ContainerService : BaseService, IContainerService
 	{
+		private readonly IContainerRepository containerRepository;
+		private readonly IContainerHealthRecordRepository containerHealthRecordRepository;
+		private readonly IContainerStatusRecordRepository containerStatusRecordRepository;
+		private readonly ILogger<ContainerService> logger;
+
+		public ContainerService(
+			IContainerRepository containerRepository,
+			IContainerHealthRecordRepository containerHealthRecordRepository,
+			IContainerStatusRecordRepository containerStatusRecordRepository,
+			ILogger<ContainerService> logger,
+			IConfiguration configuration
+		) : base(configuration)
+		{
+			this.containerRepository = containerRepository;
+			this.containerHealthRecordRepository = containerHealthRecordRepository;
+			this.containerStatusRecordRepository = containerStatusRecordRepository;
+			this.logger = logger;
+		}
+
         public async Task<Container> CreateContainer(string uiid, int idInCloud)
         {
 			var container = new Container() { UIID = uiid, IdInCloudService = idInCloud };
@@ -77,7 +92,7 @@ namespace DittoBox.EdgeServer.ContainerManagement.Application.Services
                 SulfurDioxide = statusReports.Average(r => r.GasSO2)
             };
 
-            var response = await client.PutAsJsonAsync(Path.Combine(BaseUrl, $"container/{container!.IdInCloudService}/metrics"),statusResource);
+            var response = await client.PutAsJsonAsync($"{BaseUrl}/container/{container!.IdInCloudService}/metrics", statusResource);
             if (response.IsSuccessStatusCode)
             {
 
